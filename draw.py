@@ -9,7 +9,7 @@ class Draw:
 
     def font_loader(self):
         try:
-            custom_font_path = "~/Downloads/Noto_Sans_Egyptian_Hieroglyphs/NotoSansEgyptianHieroglyphs-Regular.ttf"
+            custom_font_path = "./NotoSansEgyptianHieroglyphs-Regular.ttf"
             font = ImageFont.truetype(custom_font_path, 30)
         except IOError:
             print("Couldn't load", custom_font_path, "switch to default")
