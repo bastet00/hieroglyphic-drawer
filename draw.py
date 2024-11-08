@@ -30,6 +30,6 @@ class Draw:
         w, h = self.get_text_dimensions()
         image = Image.new("RGB", (w, h), color="white")
         draw = ImageDraw.Draw(image)
-        center = 0.5
-        draw.text((center, center), self.text, font=self.font, fill="black")
+        # NOTE: height padding makes it possible to draw at 0,0
+        draw.text((0, 0), self.text, font=self.font, fill="black")
         image.save("output.png")
