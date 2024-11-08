@@ -2,39 +2,41 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 class Draw:
-    def __init__(self, font_size, text, height):
+    def __init__(self, font_size, text):
         self.font_size = font_size
         self.text = text
-        self.height = height
+        self.font = self.font_loader()
 
     def font_loader(self):
-        try:
-            custom_font_path = "./NotoSansEgyptianHieroglyphs-Regular.ttf"
-            font = ImageFont.truetype(custom_font_path, self.font_size)
-        except IOError:
-            print("Couldn't load", custom_font_path, "switch to default")
-            font = ImageFont.load_default()
+        custom_font_path = "./NotoSansEgyptianHieroglyphs-Regular.ttf"
+        return ImageFont.truetype(custom_font_path, self.font_size)
 
-        return font
+    def get_text_dimensions(self):
+        """
+        generate dimensions spesfic for each text
+        @Return (width,height)
+        """
+        clone = Image.new("RGB", (0, 0), color="white")
+        text_clone = ImageDraw.Draw(clone)
+        dimensions = text_clone.textbbox((0, 0), self.text, font=self.font)
 
-    def total_width(self):
-        return self.font_size * len(self.text)
+        height_padding = 1.5
+        w = dimensions[2] - dimensions[0]
+        h = int((dimensions[3] - dimensions[1]) * height_padding)
+
+        return w, h
 
     def draw(self):
-        print("Width:", self.total_width(), "Height:", self.height)
-        image = Image.new("RGB", (self.total_width(), self.height), color="white")
+        w, h = self.get_text_dimensions()
+        image = Image.new("RGB", (w, h), color="white")
         draw = ImageDraw.Draw(image)
-        font = self.font_loader()
 
-        text_diementions = draw.textbbox((0, 0), self.text, font=font)
-        text_width = text_diementions[2] - text_diementions[0]
-        text_height = text_diementions[3] - text_diementions[1]
+        text_dimensions = draw.textbbox((0, 0), self.text, font=self.font)
+        total_x = text_dimensions[2] - text_dimensions[0]
+        total_y = text_dimensions[3] - text_dimensions[1]
 
-        pos_x = (self.total_width() - text_width) / 2
-        post_y = (self.height - text_height) / 2
+        x = (w - total_x) / 2
+        y = (h - total_y) / 2 - text_dimensions[1]
 
-        text_position = (pos_x, post_y)
-
-        draw.text(text_position, self.text, font=font, fill="black")
-
+        draw.text((x, y), self.text, font=self.font, fill="black")
         image.save("output.png")
