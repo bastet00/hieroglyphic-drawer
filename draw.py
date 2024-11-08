@@ -1,38 +1,40 @@
 from PIL import Image, ImageDraw, ImageFont
-from read import GenerateSmybols
 
 
 class Draw:
-    def __init__(self, width, height):
-        self.width = width
+    def __init__(self, font_size, text, height):
+        self.font_size = font_size
+        self.text = text
         self.height = height
 
     def font_loader(self):
         try:
             custom_font_path = "./NotoSansEgyptianHieroglyphs-Regular.ttf"
-            font = ImageFont.truetype(custom_font_path, 30)
+            font = ImageFont.truetype(custom_font_path, self.font_size)
         except IOError:
             print("Couldn't load", custom_font_path, "switch to default")
             font = ImageFont.load_default()
 
         return font
 
+    def total_width(self):
+        return self.font_size * len(self.text)
+
     def draw(self):
-        image = Image.new("RGB", (self.width, self.height), color="white")
+        print("Width:", self.total_width(), "Height:", self.height)
+        image = Image.new("RGB", (self.total_width(), self.height), color="white")
         draw = ImageDraw.Draw(image)
-        text = GenerateSmybols("./signs_mapper.json").map_code_to_symbols()
         font = self.font_loader()
 
-        text_diementions = draw.textbbox((0, 0), text, font=font)
+        text_diementions = draw.textbbox((0, 0), self.text, font=font)
         text_width = text_diementions[2] - text_diementions[0]
         text_height = text_diementions[3] - text_diementions[1]
 
-        text_position = ((self.width - text_width) / 2, (self.height - text_height) / 2)
+        pos_x = (self.total_width() - text_width) / 2
+        post_y = (self.height - text_height) / 2
 
-        draw.text(text_position, text, font=font, fill="black")
+        text_position = (pos_x, post_y)
+
+        draw.text(text_position, self.text, font=font, fill="black")
 
         image.save("output.png")
-
-
-# Create an instance of Draw and draw the image
-Draw(400, 200).draw()
