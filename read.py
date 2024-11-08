@@ -26,6 +26,11 @@ class GenerateSmybols:
             "G43",
             "S39",
             "I9",
+            "M17",
+            "M17",
+            "G43",
+            "S39",
+            "I9",
         ]
 
     def load_unicode_symbol_mapper(self):

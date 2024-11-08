@@ -30,13 +30,6 @@ class Draw:
         w, h = self.get_text_dimensions()
         image = Image.new("RGB", (w, h), color="white")
         draw = ImageDraw.Draw(image)
-
-        text_dimensions = draw.textbbox((0, 0), self.text, font=self.font)
-        total_x = text_dimensions[2] - text_dimensions[0]
-        total_y = text_dimensions[3] - text_dimensions[1]
-
-        x = (w - total_x) / 2
-        y = (h - total_y) / 2 - text_dimensions[1]
-
-        draw.text((x, y), self.text, font=self.font, fill="black")
+        center = 0.5
+        draw.text((center, center), self.text, font=self.font, fill="black")
         image.save("output.png")
