@@ -96,24 +96,30 @@ class Draw:
         bottom_width = (
             arr_of_blocks[0]["symbol_width"] + arr_of_blocks[1]["symbol_width"]
         )
+        print("got bottom width equals", bottom_width)
         y = max(yoffset) - arr_of_blocks[0]["symbol_height"]
+        print("my start point is", start_x)
         return start_x, bottom_width, y
 
     def three_elements_block(self, xoffset, yoffset, arr_of_blocks, draw, block_num):
         start_x, bottom_width, y = self.three_element_block_info(
             xoffset, yoffset, arr_of_blocks, block_num
         )
+        x = start_x
 
         for idx, block in enumerate(arr_of_blocks):
             if idx >= 2:
-                # Align it in the middle of block (center on x)
-                # Draw it vertically above them
-                start_x = (bottom_width - block["symbol_width"]) // 2
+                # Align symbol in the middle of block (center on x)
+                # Draw symbol vertically above two elements on x
+                print(f"x now is {x}")
+                print(f"from start to end {start_x + bottom_width}")
+                x = start_x + (bottom_width - block["symbol_width"]) // 2
                 y = y - arr_of_blocks[2]["symbol_height"]
-                print(f"Should be at {start_x, y}")
+
+                print("Third element should be at", x)
 
             draw.text(
-                (start_x, y - block["baseline_y"]),
+                (x, y - block["baseline_y"]),
                 text=block["symbol"],
                 fill="black",
                 font=self.font,
@@ -121,7 +127,9 @@ class Draw:
 
             if idx < 2:
                 # incremenet the x place for the next horizontal element
-                start_x += block["symbol_width"]
+                x += block["symbol_width"]
+
+            print(f"Drawing {block["symbol"]} at {start_x, y}")
 
     def draw(self):
         xoffset, yoffset, blocks = self.displacement_per_block()
