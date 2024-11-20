@@ -68,7 +68,7 @@ class Draw:
         for block_num, arr_of_blocks in blocks.items():
             widths = []
             heights = []
-            for idx, block in enumerate(arr_of_blocks):
+            for block in arr_of_blocks:
                 widths.append(block["symbol_width"])
                 heights.append(block["symbol_height"])
             if len(arr_of_blocks) == 3:
@@ -135,7 +135,7 @@ class Draw:
                 self.three_elements_block(
                     xoffset, yoffset, arr_of_blocks, draw, block_num
                 )
-            elif len(arr_of_blocks) <= 2:
+            else:
                 # 1-2 Symbols per block
                 for idx, block in enumerate(arr_of_blocks):
                     y -= block["symbol_height"]
