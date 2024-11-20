@@ -100,34 +100,28 @@ class Draw:
         return start_x, bottom_width, y
 
     def three_elements_block(self, xoffset, yoffset, arr_of_blocks, draw, block_num):
-
         start_x, bottom_width, y = self.three_element_block_info(
             xoffset, yoffset, arr_of_blocks, block_num
         )
-        # Drawing elements one by one
-        draw.text(
-            (start_x, y - arr_of_blocks[0]["baseline_y"]),
-            text=arr_of_blocks[0]["symbol"],
-            fill="black",
-            font=self.font,
-        )
-        draw.text(
-            (
-                start_x + arr_of_blocks[0]["symbol_width"],
-                y - arr_of_blocks[1]["baseline_y"],
-            ),
-            text=arr_of_blocks[1]["symbol"],
-            fill="black",
-            font=self.font,
-        )
-        cx = start_x + (bottom_width - arr_of_blocks[2]["symbol_width"]) // 2
-        top_y = y - arr_of_blocks[2]["symbol_height"]
-        draw.text(
-            (cx, top_y - arr_of_blocks[2]["baseline_y"]),
-            text=arr_of_blocks[2]["symbol"],
-            fill="black",
-            font=self.font,
-        )
+
+        for idx, block in enumerate(arr_of_blocks):
+            if idx >= 2:
+                # Align it in the middle of block (center on x)
+                # Draw it vertically above them
+                start_x = (bottom_width - block["symbol_width"]) // 2
+                y = y - arr_of_blocks[2]["symbol_height"]
+                print(f"Should be at {start_x, y}")
+
+            draw.text(
+                (start_x, y - block["baseline_y"]),
+                text=block["symbol"],
+                fill="black",
+                font=self.font,
+            )
+
+            if idx < 2:
+                # incremenet the x place for the next horizontal element
+                start_x += block["symbol_width"]
 
     def draw(self):
         xoffset, yoffset, blocks = self.displacement_per_block()
