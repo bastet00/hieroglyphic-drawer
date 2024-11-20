@@ -96,7 +96,6 @@ class Draw:
         third_vertical_place = max(
             arr_of_blocks[0]["symbol_height"], arr_of_blocks[1]["symbol_height"]
         )
-
         base_y = max(yoffset)
         x = start_x
 
@@ -106,7 +105,7 @@ class Draw:
                 # Align symbol in the middle of block (center on x)
                 # Draw symbol vertically above two elements on x
                 x = start_x + (bottom_width - block["symbol_width"]) // 2
-                y = (yoffset[block_num] - third_vertical_place) - 7  # margin
+                y = y - third_vertical_place
 
             draw.text(
                 (x, y - block["baseline_y"]),
@@ -118,8 +117,6 @@ class Draw:
             if idx < 2:
                 # incremenet the x place for the next horizontal element
                 x += block["symbol_width"]
-
-            print(f"Drawing {block["symbol"]} at {x, y - block["baseline_y"]}")
 
     def draw(self):
         xoffset, yoffset, blocks = self.displacement_per_block()
