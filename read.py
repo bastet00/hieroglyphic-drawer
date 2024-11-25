@@ -2,21 +2,6 @@ import json
 import inspect
 import sys
 
-"""
-    Analyze what special characters mean to a compiler function.
-
-        - `-` : Mark a new block
-
-        - `:` : Stack symbols vertically where the first one at the top,
-        the next one(s) vertically down
-
-        - `*` : Holds two elements horizontally next to each other,
-        with one other symbol centered above
-
-        - `##` : Symbol in the middle of a symbol,
-        symbol x inside symbol y
-"""
-
 
 class BlocksGenerator:
     def __init__(self, file_path, mdc):
@@ -28,66 +13,65 @@ class BlocksGenerator:
         self.mdc = mdc
         with open(self.file_path, "r") as file:
             self.mapper = json.load(file)
-
-        # order matters
-        self.signs = {
-            "vertical_draw": ":",
-            "compose": "*",
-        }
+        self.signs = ["*", ":", "&"]
 
     def unicode_map_error(self, e):
         stack = inspect.stack()
         caller = stack[1].function
         print("Could not map unicode to a symbol", e)
-        print("Caller:", caller)
+        print(f"Caller function: {caller}")
         sys.tracebacklimit = 0
         raise
 
     def _convert_mdc_to_nested_array(self):
-        for char in self.mdc:
-            if char == "&":
-                self.mdc = self.mdc.replace(char, "-")
         return self.mdc.split("-")
 
-    def handle_convert(self, mdc, char_idxs=None):
-        if char_idxs is None:
-            char_idxs = []
+    def pre_convertor(self, mdc):
+        """
+        Returns an array of indexes mapped to each special char
+        in the same order they appear in the input string.
+        """
+        char_idxs = []
 
-        # stop recursion if string doesn't have special chars or its too short
-        if len(mdc) <= 2 or len(mdc) == 0:
-            return char_idxs
+        for idx, char in enumerate(mdc):
+            if char in self.signs:
+                char_idxs.append(idx)
 
-        idx = 0
-        for sign in self.signs.keys():
-            founded_at = mdc.find(self.signs[sign])
-            if founded_at != -1:
-                prev = char_idxs[len(char_idxs) - 1] + 1 if len(char_idxs) else 0
-                char_idxs.append(founded_at + prev)
-                idx = founded_at
-                break
+        return char_idxs
 
-        return self.handle_convert(mdc[idx + 1 :], char_idxs) if idx != 0 else char_idxs
+    def detect_draw_type(self, mdc, spchar_idxs):
+        """
+        Draw type detector.
 
-    def detect_draw_type(self, mdc):
+        Add a new detecting spcial character by adding the char in self.sign.
+
+        WARNING: return value has to be the same as a function,
+        that is going to be implemented in Draw class which,
+        specifies the draw technique.
+
+        NOTE: keep in mind that one block could has multiple special chars
+        """
         match mdc:
             case _ if "*" in mdc:
                 return "compose"
-            case _ if "*" not in mdc:
+            case _ if "*" not in mdc and ":" in mdc:
                 return "vertical_draw"
+            case _ if "&" in mdc:
+                return "second_on_top"
             case _:
-                raise ValueError("Could not detect a draw type")
+                return "stand_alone"
 
     def create_block_object(self, spchar_idxs, num_of_symbols, mdc):
-        block_object = {"draw_type": "", "symbols": []}
+        block_object = {"draw_type": "", "draw_info": []}
         i = 0
         start = 0
         temp = 0
-        block_object["draw_type"] = self.detect_draw_type(mdc)
+        block_object["draw_type"] = self.detect_draw_type(mdc, spchar_idxs)
 
         for symbol in range(num_of_symbols):
             unicode = mdc[start : spchar_idxs[i] if i != len(spchar_idxs) else None]
             try:
-                block_object["symbols"].append(self.mapper[unicode])
+                block_object["draw_info"].append({"symbol": self.mapper[unicode]})
             except KeyError as e:
                 self.unicode_map_error(e)
 
@@ -101,16 +85,11 @@ class BlocksGenerator:
         unicode_array = []
         mdcs = self._convert_mdc_to_nested_array()
         for mdc in mdcs:
-            idxs = self.handle_convert(mdc)
-            symbols = len(idxs)
-            if symbols == 0:
-                try:
-                    unicode_array.append(self.mapper[mdc])
-                except KeyError as e:
-                    self.unicode_map_error(e)
-            else:
-                symbols += 1
-                block_object = self.create_block_object(idxs, symbols, mdc)
-                unicode_array.append(block_object)
+            spcial_chars_idxs = self.pre_convertor(mdc)
+            num_of_symbols = len(spcial_chars_idxs) + 1
+            block_object = self.create_block_object(
+                spcial_chars_idxs, num_of_symbols, mdc
+            )
+            unicode_array.append(block_object)
 
         return unicode_array

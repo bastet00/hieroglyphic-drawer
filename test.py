@@ -11,7 +11,7 @@ class BlockTest(unittest.TestCase):
         generator = BlocksGenerator("./signs_mapper.json", "F40-G43")
         blocks = generator.unicode_to_draw_array()
         for block in blocks:
-            self.assertIsInstance(block, str)
+            self.assertEqual(block["draw_type"], "stand_alone")
 
     def test_compose_block(self):
         generator = BlocksGenerator("./signs_mapper.json", "F40:X1*F34")
@@ -35,7 +35,7 @@ class BlockTest(unittest.TestCase):
         blocks = generator.unicode_to_draw_array()
         stand_alone = blocks[0:2]
         for block in stand_alone:
-            self.assertIsInstance(block, str)
+            self.assertEqual(block["draw_type"], "stand_alone")
         vertical_draw = blocks[2:4]
         for block in vertical_draw:
             self.assertEqual(block["draw_type"], "vertical_draw")

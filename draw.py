@@ -3,16 +3,29 @@ from PIL import Image, ImageDraw, ImageFont
 
 class Draw:
     def __init__(self, font_size):
-        self.font_size = font_size
-        self.font = self.font_loader()
-        self._arrange_blocks = {}
+        self.default_font_size = font_size
+        self.font = self.font_loader(self.default_font_size)
+        self._blocks = {}
 
-    def font_loader(self):
+    def font_loader(self, font_size):
         custom_font_path = "./NotoSansEgyptianHieroglyphs-Regular.ttf"
-        return ImageFont.truetype(custom_font_path, self.font_size)
+        return ImageFont.truetype(custom_font_path, font_size)
+
+    def set_font_size(self, font_size):
+        self.font = self.font_loader(font_size)
 
     def set_blocks(self, block_num, blocks):
-        self._arrange_blocks[block_num] = blocks
+        self._blocks[block_num] = blocks
+
+    def get_text_dimensions(self, text):
+        """
+        NOTE: Diemensions (0 width, 0 height) would always return x1 as 0
+        @Return -> Tuple (x1,y1,x2,y2)
+        """
+        clone = Image.new("RGB", (0, 0), color="white")
+        text_clone = ImageDraw.Draw(clone)
+        dimensions = text_clone.textbbox((0, 0), text, font=self.font)
+        return dimensions
 
     def symbol_coordinates(self, symbol):
         """
@@ -30,121 +43,121 @@ class Draw:
             "baseline_y": y1,
         }
 
-    def generate_block_points(self):
-        """
-        @Returns object contains block number as key,
-            arr of object each holds symbol info
-        """
-        calc_per_block = {}
-        for block_num, block in self._arrange_blocks.items():
-            calc_per_block[block_num] = []
-            for symbol in block:
-                info = self.symbol_coordinates(symbol)
-                calc_per_block[block_num].append(info)
-        return calc_per_block
-
-    def get_text_dimensions(self, text):
-        """
-        NOTE: Diemensions (0 width, 0 height) would always return x1 as 0
-        @Return -> Tuple (x1,y1,x2,y2)
-        """
-        clone = Image.new("RGB", (0, 0), color="white")
-        text_clone = ImageDraw.Draw(clone)
-        dimensions = text_clone.textbbox((0, 0), text, font=self.font)
-        return dimensions
-
     def displacement_per_block(self):
-        """
-        @Returns -> Tuple (
-            horizontal_offset -> max value for each block horizontally
-            vertical_offsets ->
-            blocks: blocks to be drawn
-        )
-        """
-        blocks = self.generate_block_points()
         horizontal_offset = []
-        vertical_offsets = []
+        vertical_offset = []
+        for block_num, block in self._blocks.items():
+            symbols = block["draw_info"]
+            block["draw_info"] = [
+                self.symbol_coordinates(symbol["symbol"]) for symbol in symbols
+            ]
+            x_offset, y_offset = self.calc_offsets(block)
+            horizontal_offset.append(x_offset)
+            vertical_offset.append(y_offset)
+        return horizontal_offset, vertical_offset
 
-        for block_num, arr_of_blocks in blocks.items():
-            widths = []
-            heights = []
-            for block in arr_of_blocks:
-                widths.append(block["symbol_width"])
-                heights.append(block["symbol_height"])
-            if len(arr_of_blocks) == 3:
-                sum1 = widths[0] + widths[1]
-                sum2 = widths[2]
-                horizontal_offset.append(max(sum1, sum2))
+    def calc_offsets(self, block):
+        data = block["draw_info"]
+        draw_type = block["draw_type"]
+        x_offsets = []
+        y_offsets = []
 
-                bottom_height = max(heights[0], heights[1])
-                total_height = bottom_height + heights[2]
-                vertical_offsets.append(total_height)
+        for obj in data:
+            x_offsets.append(obj["symbol_width"])
+            y_offsets.append(obj["symbol_height"])
+
+        if draw_type == "compose":
+            top_height = y_offsets[0]
+            bottom_max_height = max(y_offsets[1], y_offsets[2])
+            top_width = x_offsets[0]
+            bottom_max_width = max(x_offsets[1], x_offsets[2])
+            return max(top_width, bottom_max_width) + 5, top_height + bottom_max_height
+        return max(x_offsets), sum(y_offsets)
+
+    def stand_alone(self, draw, block, x, total_height):
+        symbol = block["draw_info"][0]
+        draw.text(
+            (x, total_height - symbol["y2"]),
+            text=symbol["symbol"],
+            fill="black",
+            font=self.font,
+        )
+
+    def vertical_draw(self, draw, block, x, total_height):
+        # TODO: center the next vertically drawn symbol on x axis if the previous was wider
+        symbols = block["draw_info"]
+        y = total_height
+        for symbol in symbols[::-1]:
+            draw.text(
+                (x, y - symbol["y2"]),
+                text=symbol["symbol"],
+                fill="black",
+                font=self.font,
+            )
+            y -= symbol["symbol_height"]
+
+    def second_on_top(self, draw, block, x, total_height):
+        # TODO: if two symbols is the same use & to combine them,
+        # horizontally
+        # TODO: case : &
+        # TODO: Horizontal offset, verticall offset calculation may be considered ?
+        symbols = block["draw_info"]
+        y = total_height
+        for idx, symbol in enumerate(symbols):
+            if idx == 0:
+                y = y - symbol["y2"]
             else:
-                horizontal_offset.append(max(widths))
-                if len(arr_of_blocks) == 2:
-                    vertical_offsets.append(heights[0] + heights[1])
-                else:
-                    vertical_offsets.append(heights[0])
+                y = 0
+                y -= symbol["baseline_y"]
+                x += symbol["symbol_width"]
 
-        return horizontal_offset, vertical_offsets, blocks
-
-    def three_elements_block(self, xoffset, yoffset, arr_of_blocks, draw, block_num):
-        start_x = sum(xoffset[0:block_num])
-        bottom_width = (
-            arr_of_blocks[0]["symbol_width"] + arr_of_blocks[1]["symbol_width"]
-        )
-        third_vertical_place = max(
-            arr_of_blocks[0]["symbol_height"], arr_of_blocks[1]["symbol_height"]
-        )
-        base_y = max(yoffset)
-        x = start_x
-
-        for idx, block in enumerate(arr_of_blocks):
-            y = base_y - block["symbol_height"]
-            if idx >= 2:
-                # Align symbol in the middle of block (center on x)
-                # Draw symbol vertically above two elements on x
-                x = start_x + (bottom_width - block["symbol_width"]) // 2
-                y = y - third_vertical_place
+            print(f"Drawing {symbol["symbol"]} at {x,y}")
 
             draw.text(
-                (x, y - block["baseline_y"]),
-                text=block["symbol"],
+                (x, y),
+                text=symbol["symbol"],
                 fill="black",
                 font=self.font,
             )
 
-            if idx < 2:
-                # incremenet the x place for the next horizontal element
-                x += block["symbol_width"]
+    def compose(self, draw, block, x, total_height):
+        symbols = block["draw_info"]
+        y = 0
+        for idx, symbol in enumerate(symbols):
+            if idx == 0:
+                y = y - symbol["baseline_y"] + 5
+            else:
+                y = total_height - symbol["y2"] + 5
+
+            if idx == 2:
+                x += symbol["symbol_width"]
+
+            print(f"Drawing {symbol["symbol"]} at {x,y}")
+            draw.text(
+                (x, y),
+                text=symbol["symbol"],
+                fill="black",
+                font=self.font,
+            )
 
     def draw(self):
-        xoffset, yoffset, blocks = self.displacement_per_block()
-        w = sum(xoffset)
-        h = max(yoffset)
+        x_offset, y_offset = self.displacement_per_block()
+        print(self._blocks)
+        w, h = sum(x_offset), max(y_offset)
+        print(f"Image width:{w}, Image Height {h}")
         image = Image.new("RGB", (w, h), color="white")
         draw = ImageDraw.Draw(image)
         x = 0
-        y = h
-
-        for block_num, arr_of_blocks in blocks.items():
-            if len(arr_of_blocks) > 2:
-                self.three_elements_block(
-                    xoffset, yoffset, arr_of_blocks, draw, block_num
-                )
+        for block_num, block in self._blocks.items():
+            if hasattr(self, block["draw_type"]):
+                draw_method = getattr(self, block["draw_type"])
+                draw_method(draw, block, x, h)
             else:
-                # 1-2 Symbols per block
-                for idx, block in enumerate(arr_of_blocks):
-                    y -= block["symbol_height"]
-                    draw.text(
-                        (x, y - block["baseline_y"]),
-                        text=block["symbol"],
-                        fill="black",
-                        font=self.font,
-                    )
+                raise ValueError(
+                    f"Function implementation for {block["draw_type"]} block is missing"
+                )
 
             # Move x position for next block
-            x += xoffset[block_num]
-            y = h
+            x += x_offset[block_num]
 
         image.save("output.png")
