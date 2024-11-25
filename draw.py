@@ -74,67 +74,69 @@ class Draw:
             return max(top_width, bottom_max_width) + 5, top_height + bottom_max_height
         return max(x_offsets), sum(y_offsets)
 
-    def stand_alone(self, draw, block, x, total_height):
-        symbol = block["draw_info"][0]
-        draw.text(
-            (x, total_height - symbol["y2"]),
+    def stand_alone(self, **kwargs):
+        symbol = kwargs["block"]["draw_info"][0]
+        kwargs["draw"].text(
+            (kwargs["x"], kwargs["total_height"] - symbol["y2"]),
             text=symbol["symbol"],
             fill="black",
             font=self.font,
         )
 
-    def vertical_draw(self, draw, block, x, total_height):
-        # TODO: center the next vertically drawn symbol on x axis if the previous was wider
-        symbols = block["draw_info"]
-        y = total_height
-        for symbol in symbols[::-1]:
-            draw.text(
-                (x, y - symbol["y2"]),
+    def vertical_draw(self, **kwargs):
+        symbols = kwargs["block"]["draw_info"]
+        y = kwargs["total_height"]
+
+        for idx, symbol in enumerate(symbols[::-1]):
+            move_symbol = (kwargs["block_width"] - symbol["symbol_width"]) // 2
+            centered_x = kwargs["x"] + move_symbol
+            kwargs["draw"].text(
+                (centered_x, y - symbol["y2"]),
                 text=symbol["symbol"],
                 fill="black",
                 font=self.font,
             )
+
             y -= symbol["symbol_height"]
 
-    def second_on_top(self, draw, block, x, total_height):
+    def second_on_top(self, **kwargs):
         # TODO: if two symbols is the same use & to combine them,
         # horizontally
         # TODO: case : &
         # TODO: Horizontal offset, verticall offset calculation may be considered ?
-        symbols = block["draw_info"]
-        y = total_height
+        symbols = kwargs["block"]["draw_info"]
+        y = kwargs["total_height"]
         for idx, symbol in enumerate(symbols):
             if idx == 0:
                 y = y - symbol["y2"]
             else:
                 y = 0
                 y -= symbol["baseline_y"]
-                x += symbol["symbol_width"]
+                kwargs["x "] += symbol["symbol_width"]
 
-            print(f"Drawing {symbol["symbol"]} at {x,y}")
+            print(f"Drawing {symbol["symbol"]} at {kwargs["x"],kwargs["y"]}")
 
-            draw.text(
-                (x, y),
+            kwargs.draw.text(
+                (kwargs["x"], kwargs["y"]),
                 text=symbol["symbol"],
                 fill="black",
                 font=self.font,
             )
 
-    def compose(self, draw, block, x, total_height):
-        symbols = block["draw_info"]
+    def compose(self, **kwargs):
+        symbols = kwargs["block"]["draw_info"]
         y = 0
         for idx, symbol in enumerate(symbols):
             if idx == 0:
                 y = y - symbol["baseline_y"] + 5
             else:
-                y = total_height - symbol["y2"] + 5
+                y = kwargs["total_height"] - symbol["y2"] + 5
 
             if idx == 2:
-                x += symbol["symbol_width"]
+                kwargs["x"] += symbol["symbol_width"]
 
-            print(f"Drawing {symbol["symbol"]} at {x,y}")
-            draw.text(
-                (x, y),
+            kwargs.draw.text(
+                (kwargs["x"], kwargs["y"]),
                 text=symbol["symbol"],
                 fill="black",
                 font=self.font,
@@ -142,7 +144,6 @@ class Draw:
 
     def draw(self):
         x_offset, y_offset = self.displacement_per_block()
-        print(self._blocks)
         w, h = sum(x_offset), max(y_offset)
         print(f"Image width:{w}, Image Height {h}")
         image = Image.new("RGB", (w, h), color="white")
@@ -151,7 +152,13 @@ class Draw:
         for block_num, block in self._blocks.items():
             if hasattr(self, block["draw_type"]):
                 draw_method = getattr(self, block["draw_type"])
-                draw_method(draw, block, x, h)
+                draw_method(
+                    draw=draw,
+                    block=block,
+                    x=x,
+                    total_height=h,
+                    block_width=x_offset[block_num],
+                )
             else:
                 raise ValueError(
                     f"Function implementation for {block["draw_type"]} block is missing"
