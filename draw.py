@@ -1,11 +1,32 @@
 from PIL import Image, ImageDraw, ImageFont
 
+from drawers.drawer import (
+    AmbersandDraw,
+    ComposeDraw,
+    ComposeUpDraw,
+    StandAloneDraw,
+    VerticalDraw,
+)
+
+
+DRAW_TYPE = {
+    "second_on_top": AmbersandDraw,
+    "compose": ComposeDraw,
+    "compose_up": ComposeUpDraw,
+    "stand_alone": StandAloneDraw,
+    "vertical_draw": VerticalDraw,
+}
+
 
 class Draw:
     def __init__(self, font_size):
         self.default_font_size = font_size
         self.font = self.font_loader(self.default_font_size)
         self._blocks = {}
+        self.symbol_color = "black"
+        self.wall_color = "white"
+        # self.symbol_color = "#090909"
+        # self.wall_color = "#763c0c"
 
     def font_loader(self, font_size):
         custom_font_path = "./NotoSansEgyptianHieroglyphs-Regular.ttf"
@@ -35,6 +56,10 @@ class Draw:
         x1, y1, x2, y2 = self.get_text_dimensions(symbol)
         symbol_width = x2
         symbol_height = y2 - y1
+
+        if symbol == "𓏏":
+            symbol_height = symbol_height + 10
+
         return {
             "symbol": symbol,
             "symbol_width": symbol_width,
@@ -56,7 +81,32 @@ class Draw:
             vertical_offset.append(y_offset)
         return horizontal_offset, vertical_offset
 
+    def compose_offsets(self, x_offsets, y_offsets):
+        top_height = y_offsets[0]
+        bottom_max_height = max(y_offsets[1], y_offsets[2])
+        top_width = x_offsets[0]
+        bottom_max_width = x_offsets[1] + x_offsets[2]
+        return (
+            max(top_width, bottom_max_width),
+            top_height + bottom_max_height,
+        )
+
+    def compose_up_offsets(self, x_offsets, y_offsets):
+        max_top_height = max(y_offsets[0], y_offsets[1])
+        bottom_height = y_offsets[2]
+        top_width = x_offsets[0] + x_offsets[1]
+        bottom_width = x_offsets[2]
+        return max(top_width, bottom_width), max_top_height + bottom_height
+
     def calc_offsets(self, block):
+        """
+        Each block requires some specific calculation
+        ex.
+            second_on_top is a vertical draw technique that
+            calculates the block width with the max width of all elements
+            calculates the block height with all elements heights
+        """
+
         data = block["draw_info"]
         draw_type = block["draw_type"]
         x_offsets = []
@@ -65,21 +115,22 @@ class Draw:
         for obj in data:
             x_offsets.append(obj["symbol_width"])
             y_offsets.append(obj["symbol_height"])
-
-        if draw_type == "compose":
-            top_height = y_offsets[0]
-            bottom_max_height = max(y_offsets[1], y_offsets[2])
-            top_width = x_offsets[0]
-            bottom_max_width = max(x_offsets[1], x_offsets[2])
-            return max(top_width, bottom_max_width) + 5, top_height + bottom_max_height
-        return max(x_offsets), sum(y_offsets)
+            # print(block)
+            # print(x_offsets, y_offsets)
+        match draw_type:
+            case "compose":
+                return self.compose_offsets(x_offsets, y_offsets)
+            case "compose_up":
+                return self.compose_up_offsets(x_offsets, y_offsets)
+            case _:
+                return max(x_offsets), sum(y_offsets)
 
     def stand_alone(self, **kwargs):
         symbol = kwargs["block"]["draw_info"][0]
         kwargs["draw"].text(
             (kwargs["x"], kwargs["total_height"] - symbol["y2"]),
             text=symbol["symbol"],
-            fill="black",
+            fill=self.symbol_color,
             font=self.font,
         )
 
@@ -87,13 +138,13 @@ class Draw:
         symbols = kwargs["block"]["draw_info"]
         y = kwargs["total_height"]
 
-        for idx, symbol in enumerate(symbols[::-1]):
+        for symbol in symbols[::-1]:
             move_symbol = (kwargs["block_width"] - symbol["symbol_width"]) // 2
             centered_x = kwargs["x"] + move_symbol
             kwargs["draw"].text(
                 (centered_x, y - symbol["y2"]),
                 text=symbol["symbol"],
-                fill="black",
+                fill=self.symbol_color,
                 font=self.font,
             )
 
@@ -112,33 +163,70 @@ class Draw:
             else:
                 y = 0
                 y -= symbol["baseline_y"]
-                kwargs["x "] += symbol["symbol_width"]
+                kwargs["x"] += symbol["symbol_width"]
 
-            print(f"Drawing {symbol["symbol"]} at {kwargs["x"],kwargs["y"]}")
-
-            kwargs.draw.text(
-                (kwargs["x"], kwargs["y"]),
+            kwargs["draw"].text(
+                (kwargs["x"], y),
                 text=symbol["symbol"],
-                fill="black",
+                fill=self.symbol_color,
                 font=self.font,
             )
 
     def compose(self, **kwargs):
         symbols = kwargs["block"]["draw_info"]
         y = 0
+        # print(
+        #     f"this block starts from {kwargs["x"]} with block_width of {kwargs["block_width"]}"
+        # )
         for idx, symbol in enumerate(symbols):
+            temp_x = kwargs["x"]
             if idx == 0:
-                y = y - symbol["baseline_y"] + 5
+                y = y - symbol["baseline_y"]
+                kwargs["x"] = (kwargs["block_width"] - symbol["symbol_width"]) // 2
             else:
-                y = kwargs["total_height"] - symbol["y2"] + 5
+                y = kwargs["total_height"] - symbol["y2"]
+                # if symbol["symbol"] == "𓏏":
+                #     y += 7
+
+            kwargs["x"] = temp_x
 
             if idx == 2:
-                kwargs["x"] += symbol["symbol_width"]
+                prev_width = symbols[idx - 1]["symbol_width"]
+                kwargs["x"] = kwargs["x"] + prev_width
 
-            kwargs.draw.text(
-                (kwargs["x"], kwargs["y"]),
+            print(f"Drawing at {symbol["symbol"]} {kwargs["x"], y}")
+
+            kwargs["draw"].text(
+                (kwargs["x"], y),
                 text=symbol["symbol"],
-                fill="black",
+                fill=self.symbol_color,
+                font=self.font,
+            )
+
+    def compose_up(self, **kwargs):
+        symbols = kwargs["block"]["draw_info"]
+        y = 0
+
+        # print(
+        #     f"this block starts from {kwargs["x"]} with block_width of {kwargs["block_width"]}"
+        # )
+
+        for idx, symbol in enumerate(symbols):
+            y = 0 - symbol["baseline_y"]
+            if idx == 1:
+                kwargs["x"] += symbols[idx - 1]["symbol_width"]
+            if idx == 2:
+                y = kwargs["total_height"] - symbol["y2"]
+                reset_x = kwargs["x"] - symbols[0]["symbol_width"]
+                block_center = reset_x + kwargs["block_width"] // 2
+                symbol_half_width = symbol["symbol_width"] // 2
+                kwargs["x"] = block_center - symbol_half_width
+
+            # print(f"Drawing at {symbol["symbol"]} {kwargs["x"], y}")
+            kwargs["draw"].text(
+                (kwargs["x"], y),
+                text=symbol["symbol"],
+                fill=self.symbol_color,
                 font=self.font,
             )
 
@@ -146,10 +234,12 @@ class Draw:
         x_offset, y_offset = self.displacement_per_block()
         w, h = sum(x_offset), max(y_offset)
         print(f"Image width:{w}, Image Height {h}")
-        image = Image.new("RGB", (w, h), color="white")
+        image = Image.new("RGB", (w, h), color=self.wall_color)
         draw = ImageDraw.Draw(image)
         x = 0
         for block_num, block in self._blocks.items():
+            print(f"I need to call class for", block["draw_type"])
+            foo = DRAW_TYPE[block["draw_type"]]().hello_idiot()
             if hasattr(self, block["draw_type"]):
                 draw_method = getattr(self, block["draw_type"])
                 draw_method(

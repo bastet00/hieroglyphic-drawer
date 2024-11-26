@@ -1,6 +1,14 @@
 import json
 import inspect
 import sys
+from handlers.handlers import ComposeHandler, VerticalDrawHandler, SecondOnTopHandler
+
+
+SIGN_HANDLERS = {
+    "*": ComposeHandler,
+    ":": VerticalDrawHandler,
+    "&": SecondOnTopHandler,
+}
 
 
 class BlocksGenerator:
@@ -13,7 +21,7 @@ class BlocksGenerator:
         self.mdc = mdc
         with open(self.file_path, "r") as file:
             self.mapper = json.load(file)
-        self.signs = ["*", ":", "&"]
+        self.signs = list(char for char in SIGN_HANDLERS.keys())
 
     def unicode_map_error(self, e):
         stack = inspect.stack()
@@ -41,25 +49,14 @@ class BlocksGenerator:
 
     def detect_draw_type(self, mdc, spchar_idxs):
         """
-        Draw type detector.
-
-        Add a new detecting spcial character by adding the char in self.sign.
-
-        WARNING: return value has to be the same as a function,
-        that is going to be implemented in Draw class which,
-        specifies the draw technique.
-
-        NOTE: keep in mind that one block could has multiple special chars
+        Handles draw type by mapping the appropriate class in SIGN_HANDLERS
         """
-        match mdc:
-            case _ if "*" in mdc:
-                return "compose"
-            case _ if "*" not in mdc and ":" in mdc:
-                return "vertical_draw"
-            case _ if "&" in mdc:
-                return "second_on_top"
-            case _:
-                return "stand_alone"
+        for sign in self.signs:
+            if sign in mdc:
+                handler_class = SIGN_HANDLERS[sign]
+                if handler_class:
+                    return handler_class().handle_draw_type(mdc, spchar_idxs)
+        return "stand_alone"
 
     def create_block_object(self, spchar_idxs, num_of_symbols, mdc):
         block_object = {"draw_type": "", "draw_info": []}
@@ -92,4 +89,5 @@ class BlocksGenerator:
             )
             unicode_array.append(block_object)
 
+        print(unicode_array)
         return unicode_array
