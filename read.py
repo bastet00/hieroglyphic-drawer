@@ -1,13 +1,13 @@
 import json
 import inspect
 import sys
-from handlers.handlers import ComposeHandler, VerticalDrawHandler, SecondOnTopHandler
+from handlers.handlers import ComposeHandler, VerticalDrawHandler, AmpersandHandler
 
 
 SIGN_HANDLERS = {
     "*": ComposeHandler,
     ":": VerticalDrawHandler,
-    "&": SecondOnTopHandler,
+    "&": AmpersandHandler,
 }
 
 
@@ -89,5 +89,4 @@ class BlocksGenerator:
             )
             unicode_array.append(block_object)
 
-        print(unicode_array)
         return unicode_array

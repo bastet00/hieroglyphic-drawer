@@ -3,9 +3,9 @@ class ComposeHandler:
         return "compose_up" if mdc[spchar_idxs[0]] == "*" else "compose"
 
 
-class SecondOnTopHandler:
+class AmpersandHandler:
     def handle_draw_type(self, mdc, spchar_idxs):
-        return "second_on_top"
+        return "ampersand"
 
 
 class VerticalDrawHandler:
