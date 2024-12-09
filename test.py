@@ -2,6 +2,18 @@ import unittest
 from read import BlocksGenerator
 
 
+class MdcConverterTest(unittest.TestCase):
+    def test_convert_mdc_to_unicode__should_return_right_unicode(self):
+        mdcConverter = MdcConverter("A1-B1")
+        hieroglyphics_unicode = mdcConverter.to_unicode()
+        self.self.assertEqual(hieroglyphics_unicode, "𓀀𓁐")
+
+
+    def test_convert_mdc_to_image(self):
+        mdcConverter = MdcConverter("A1-B1")
+        hieroglyphics_unicode = mdcConverter.to_image(size=(100, 100))
+        # assert image is created or so 
+
 class BlockTest(unittest.TestCase):
     """
     Test drawing types to the input
