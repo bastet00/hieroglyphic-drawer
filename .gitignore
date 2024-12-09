@@ -2,3 +2,4 @@
 .vim/
 Pip*
 *.png
+__pycache__/
