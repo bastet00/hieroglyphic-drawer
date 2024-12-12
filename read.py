@@ -93,20 +93,20 @@ class BlocksGenerator:
 
         return unicode_array
 
-    def draw_image(self, font_size):
+    def draw_image(self, font_size, storage_path):
         draw = Draw(font_size)
         drawers = draw.get_drawers()
         for block in self.blocks:
             draw_type = block["draw_type"]
             draw_cls = drawers[draw_type]()
-            block_details, block_font_size, block_width = draw_cls.calc_dimensions(
-                block, font_size
+            block_details, block_font_size, block_width, block_height = (
+                draw_cls.calc_dimensions(block, font_size)
             )
             # override draw_info adding dimensions data
             block["draw_info"] = block_details
-            block["block_info"] = (block_font_size, block_width)
+            block["block_info"] = (block_font_size, block_width, block_height)
         self.image_width()
-        self.image_instance(draw)
+        self.image_instance(draw, drawers, font_size, storage_path)
 
     def image_width(self):
         image_width = 0
@@ -114,6 +114,15 @@ class BlocksGenerator:
             image_width += block["block_info"][1]
         return image_width
 
-    def image_instance(self, draw_cls):
+    def image_instance(self, draw_cls, drawers, img_height, storage_path):
         img_width = self.image_width()
-        draw = draw_cls.get_image_instance(img_width)
+        draw, image = draw_cls.get_image_instance(img_width)
+        x = 0
+        for block in self.blocks:
+            block_width = block["block_info"][1]
+            draw_type = block["draw_type"]
+            draw_cls = drawers[draw_type]()
+            draw_cls.draw(block, draw, x, img_height)
+            x += block_width
+
+        image.save(storage_path)

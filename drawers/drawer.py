@@ -55,10 +55,12 @@ class StandAloneDraw(FontController, CommonDraw):
                     "y1": y1,
                 }
             )
-        return symbol_dimensions, font_size, width
+        return symbol_dimensions, font_size, width, height
 
     def draw(self, block, draw, x, img_height):
         data = block["draw_info"][0]
+        block_info = block["block_info"]
+        self.font = self.font_loader(block_info[0])
         y = img_height - data["y2"]
         draw.text(
             (x, y),
@@ -106,14 +108,17 @@ class VerticalDraw(FontController, CommonDraw):
                 block, max_block_height, font_size=new_font_size
             )
 
-        return symbol_dimensions, font_size, max(widths)
+        return symbol_dimensions, font_size, max(widths), sum(heights)
 
-    def draw(self, block, draw, x, block_width, block_height, font_size, img_height):
+    def draw(self, block, draw, x, img_height):
+        print(block)
         symbols = block["draw_info"]
+        block_info = block["block_info"]
+        font_size = block_info[0]
         self.font = self.font_loader(font_size)
-        empty_space = img_height - block_height
+        empty_space = img_height - block_info[2]
         for symbol in symbols[::-1]:
-            cx = (block_width - symbol["symbol_width"]) // 2
+            cx = (block_info[1] - symbol["symbol_width"]) // 2
             y = img_height - symbol["y2"]
             draw.text(
                 (x + cx, y),

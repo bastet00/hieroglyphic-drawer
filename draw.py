@@ -23,6 +23,7 @@ class Draw(DrawWrapper):
     def set_blocks(self, block_num, blocks):
         self._blocks[block_num] = blocks
 
+    def get_drawers(self):
         drawers = {}
         for cls in self.__class__.mro():
             if cls not in (Draw, DrawWrapper, object):
@@ -32,6 +33,7 @@ class Draw(DrawWrapper):
 
     def get_image_instance(self, image_width):
         h = self.max_block_height
+        print(f"Image instance: Width:{image_width}-Height:{h} ")
         image = Image.new("RGB", (image_width, h), color="white")
         draw = ImageDraw.Draw(image)
-        return draw
+        return draw, image
