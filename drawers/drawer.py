@@ -8,7 +8,6 @@ class FontController:
         self.font = self.font_loader(self.default_font_size)
 
     def font_loader(self, font_size):
-        # Get the absolute path to the font file, relative to the script's location
         custom_font_path = os.path.join(os.path.dirname(__file__), "..", "Gardiner.ttf")
         try:
             return ImageFont.truetype(custom_font_path, font_size)
@@ -37,11 +36,16 @@ class StandAloneDraw(FontController, CommonDraw):
     def __init__(self):
         super().__init__()
 
-    def calc_dimensions(self, block, img_height):
+    def __str__(self):
+        return "stand_alone"
+
+    def calc_dimensions(self, block, font_size):
         blocks = block["draw_info"]
         symbol_dimensions = []
         for symbol in blocks:
-            width, height, y2, y1 = self.get_dimensions(symbol["symbol"], self.font)
+            width, height, y2, y1 = self.get_dimensions(
+                symbol["symbol"], self.font_loader(font_size)
+            )
             symbol_dimensions.append(
                 {
                     "symbol": symbol["symbol"],
@@ -51,12 +55,7 @@ class StandAloneDraw(FontController, CommonDraw):
                     "y1": y1,
                 }
             )
-        return (
-            symbol_dimensions,
-            symbol_dimensions[0]["symbol_width"],
-            0,
-            self.default_font_size,
-        )
+        return symbol_dimensions, font_size, width
 
     def draw(self, block, draw, x, img_height):
         data = block["draw_info"][0]
@@ -72,6 +71,9 @@ class StandAloneDraw(FontController, CommonDraw):
 class VerticalDraw(FontController, CommonDraw):
     def __init__(self):
         super().__init__()
+
+    def __str__(self):
+        return "vertical_draw"
 
     def calc_dimensions(self, block, max_block_height, font_size=None):
         if font_size is None:
@@ -103,7 +105,8 @@ class VerticalDraw(FontController, CommonDraw):
             return self.calc_dimensions(
                 block, max_block_height, font_size=new_font_size
             )
-        return symbol_dimensions, max(widths), total_height, font_size
+
+        return symbol_dimensions, font_size, max(widths)
 
     def draw(self, block, draw, x, block_width, block_height, font_size, img_height):
         symbols = block["draw_info"]
@@ -124,6 +127,9 @@ class VerticalDraw(FontController, CommonDraw):
 class ComposeDraw(FontController, CommonDraw):
     def __init__(self):
         super().__init__()
+
+    def __str__(self):
+        return "compose"
 
     def calc_dimensions(self, block, max_block_height, font_size=None):
         if font_size is None:
@@ -190,6 +196,9 @@ class ComposeUpDraw(FontController, CommonDraw):
     def __init__(self):
         super().__init__()
 
+    def __str__(self):
+        return "compose_up"
+
     def calc_dimensions(self, block, max_block_height, font_size=None):
         if font_size is None:
             font_size = max_block_height
@@ -251,6 +260,9 @@ class AmpersandDraw(FontController, CommonDraw):
     def __init__(self):
         super().__init__()
 
+    def __str__(self):
+        return "ampersand"
+
     def calc_dimensions(self, block, max_block_height, font_size=None):
         if font_size is None:
             font_size = max_block_height
@@ -285,8 +297,6 @@ class AmpersandDraw(FontController, CommonDraw):
         return symbol_dimensions, total_width, total_height, font_size
 
     def draw(self, block, draw, x, block_width, block_height, font_size, img_height):
-        print(block)
-        print("Block width is", block_width)
         symbols = block["draw_info"]
         self.font = self.font_loader(font_size)
         for idx, symbol in enumerate(symbols):
@@ -294,7 +304,6 @@ class AmpersandDraw(FontController, CommonDraw):
             if idx != 0:
                 y = 0 - symbol["y1"]
 
-            print(f"Drawing at {x,y}")
             draw.text(
                 (x, y),
                 text=symbol["symbol"],

@@ -2,6 +2,7 @@ import json
 import inspect
 import sys
 from handlers.handlers import ComposeHandler, VerticalDrawHandler, AmpersandHandler
+from draw import Draw
 
 
 SIGN_HANDLERS = {
@@ -22,6 +23,7 @@ class BlocksGenerator:
         with open(self.file_path, "r") as file:
             self.mapper = json.load(file)
         self.signs = list(char for char in SIGN_HANDLERS.keys())
+        self.blocks = self.unicode_to_draw_array()
 
     def unicode_map_error(self, e):
         stack = inspect.stack()
@@ -90,3 +92,28 @@ class BlocksGenerator:
             unicode_array.append(block_object)
 
         return unicode_array
+
+    def draw_image(self, font_size):
+        draw = Draw(font_size)
+        drawers = draw.get_drawers()
+        for block in self.blocks:
+            draw_type = block["draw_type"]
+            draw_cls = drawers[draw_type]()
+            block_details, block_font_size, block_width = draw_cls.calc_dimensions(
+                block, font_size
+            )
+            # override draw_info adding dimensions data
+            block["draw_info"] = block_details
+            block["block_info"] = (block_font_size, block_width)
+        self.image_width()
+        self.image_instance(draw)
+
+    def image_width(self):
+        image_width = 0
+        for block in self.blocks:
+            image_width += block["block_info"][1]
+        return image_width
+
+    def image_instance(self, draw_cls):
+        img_width = self.image_width()
+        draw = draw_cls.get_image_instance(img_width)
