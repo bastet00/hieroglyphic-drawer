@@ -1,11 +1,11 @@
-from PIL import Image, ImageDraw, ImageFont
-from drawers.drawer import (
-    StandAloneDraw,
-    ComposeUpDraw,
-    VerticalDraw,
-    ComposeDraw,
-    AmpersandDraw,
-)
+from PIL import Image, ImageDraw
+from abc import ABC
+from drawers.vertical import VerticalDraw
+from drawers.compose import ComposeDraw
+from drawers.compose_up import ComposeUpDraw
+from drawers.ampersand import AmpersandDraw
+from drawers.stand_alone import StandAloneDraw
+from drawers.common import CommonDraw
 
 
 class DrawWrapper(
@@ -26,8 +26,8 @@ class Draw(DrawWrapper):
     def get_drawers(self):
         drawers = {}
         for cls in self.__class__.mro():
-            if cls not in (Draw, DrawWrapper, object):
-                class_draw_type = cls().__str__()
+            if cls not in (Draw, DrawWrapper, object, CommonDraw, ABC):
+                class_draw_type = cls.get_class_draw_type()
                 drawers[class_draw_type] = cls
         return drawers
 

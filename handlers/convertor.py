@@ -2,7 +2,7 @@ import json
 import inspect
 import sys
 from handlers.handlers import ComposeHandler, VerticalDrawHandler, AmpersandHandler
-from draw import Draw
+from drawers.draw import Draw
 
 
 SIGN_HANDLERS = {
@@ -12,7 +12,7 @@ SIGN_HANDLERS = {
 }
 
 
-class BlocksGenerator:
+class MdcConvertor:
     def __init__(self, file_path, mdc):
         """
         @param file_path: path to the json file

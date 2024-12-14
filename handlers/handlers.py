@@ -10,4 +10,4 @@ class AmpersandHandler:
 
 class VerticalDrawHandler:
     def handle_draw_type(self, mdc, spchar_idxs):
-        return "vertical_draw"
+        return "vertical"
