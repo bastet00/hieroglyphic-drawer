@@ -20,7 +20,7 @@ class ComposeDraw(CommonDraw):
         symbol_dimensions = []
 
         for idx, symbol in enumerate(blocks):
-            symbol_dimensions.append(self.foobar(symbol["symbol"]))
+            symbol_dimensions.append(self.get_symbol_dimensions(symbol["symbol"]))
             widths.append(symbol_dimensions[idx]["symbol_width"])
             heights.append(symbol_dimensions[idx]["symbol_height"])
 

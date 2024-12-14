@@ -25,14 +25,12 @@ class AmpersandDraw(CommonDraw):
         symbol_dimensions = []
 
         for idx, symbol in enumerate(blocks):
-            symbol_dimensions.append(self.foobar(symbol["symbol"]))
+            symbol_dimensions.append(self.get_symbol_dimensions(symbol["symbol"]))
             widths.append(symbol_dimensions[idx]["symbol_width"])
             heights.append(symbol_dimensions[idx]["symbol_height"])
 
         total_height = max(heights)
         total_width = widths[0] + int(widths[1] // 1.40)
-        print(total_width)
-        print(symbol_dimensions)
         if total_height > max_block_height - self.padding:
             new_font_size = font_size - 5
             return self.calc_dimensions(

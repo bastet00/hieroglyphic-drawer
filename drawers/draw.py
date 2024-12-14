@@ -16,12 +16,8 @@ class DrawWrapper(
 
 class Draw(DrawWrapper):
     def __init__(self, font_size):
-        self._blocks = {}
         self.wall_color = "white"
         self.max_block_height = font_size
-
-    def set_blocks(self, block_num, blocks):
-        self._blocks[block_num] = blocks
 
     def get_drawers(self):
         drawers = {}
@@ -33,7 +29,7 @@ class Draw(DrawWrapper):
 
     def get_image_instance(self, image_width):
         h = self.max_block_height
-        print(f"Image instance: Width:{image_width}-Height:{h} ")
+        print(f"Image:{image_width, h}")
         image = Image.new("RGB", (image_width, h), color="white")
         draw = ImageDraw.Draw(image)
         return draw, image

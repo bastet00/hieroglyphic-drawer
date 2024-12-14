@@ -50,7 +50,7 @@ class CommonDraw(ABC):
         symbol_height = y2 - y1
         return symbol_width, symbol_height, y2, y1
 
-    def foobar(self, symbol):
+    def get_symbol_dimensions(self, symbol):
         width, height, y2, y1 = self.get_dimensions(symbol, self.font)
         symbol_dimensions = {
             "symbol": symbol,
